@@ -6,6 +6,13 @@
     <title>Quantum Finance AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* ఏఐ రెస్పాన్స్ ని హైలైట్ చేయడానికి చిన్న స్టైల్స్ */
+        .ai-sentiment { color: #38bdf8; font-weight: 800; letter-spacing: 1px; }
+        .ai-truth { color: #e2e8f0; font-weight: 600; margin-top: 8px;}
+        .ai-action { color: #34d399; font-weight: 700; margin-top: 8px;}
+        .ai-risk { color: #f87171; font-style: italic; margin-top: 8px; font-size: 0.9em;}
+    </style>
 </head>
 <body class="bg-slate-950 text-slate-300 font-sans min-h-screen">
     <div id="app" class="max-w-4xl mx-auto p-4">
@@ -19,7 +26,7 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl mb-8">
             <div class="flex gap-2 mb-6">
                 <input type="text" id="symbolInput" placeholder="Enter Symbol (e.g., AAPL, TSLA)" 
-                    class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 w-full text-white focus:outline-none focus:border-cyan-500 transition-all">
+                    class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 w-full text-white focus:outline-none focus:border-cyan-500 transition-all uppercase">
                 <button onclick="fetchStock()" id="fetchBtn" class="bg-cyan-500 text-slate-950 font-bold px-6 py-3 rounded-xl hover:bg-cyan-400 transition-all flex items-center gap-2">
                     <i data-lucide="search" class="w-5 h-5"></i>
                 </button>
@@ -33,14 +40,14 @@
 
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl mb-8">
             <h3 class="text-cyan-400 font-bold mb-4 flex items-center gap-2">
-                <i data-lucide="bot"></i> Gemini AI Analysis
+                <i data-lucide="bot"></i> Advanced AI Profiling
             </h3>
             <div class="flex gap-2">
-                <input type="text" id="aiQuery" placeholder="Ask AI about this stock (e.g., Analyse)" 
+                <input type="text" id="aiQuery" placeholder="What's your move? (e.g., Should I buy?)" 
                     class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 w-full text-white focus:outline-none focus:border-cyan-500">
-                <button onclick="askGemini()" class="bg-cyan-500 text-black px-4 py-2 rounded-xl font-bold">Ask</button>
+                <button onclick="askGemini()" class="bg-cyan-500 text-black px-4 py-2 rounded-xl font-bold">Analyze</button>
             </div>
-            <div id="aiResponse" class="mt-4 text-sm text-slate-400 italic"></div>
+            <div id="aiResponse" class="mt-6 text-sm text-slate-300 leading-relaxed border-t border-slate-800/50 pt-4 whitespace-pre-line hidden"></div>
         </div>
     </div>
 
@@ -62,7 +69,10 @@
                     const change = data["Global Quote"]["10. change percent"];
                     document.getElementById('displaySymbol').innerText = `${symbol} LIVE DATA`;
                     document.getElementById('priceDisplay').innerText = `$${price}`;
-                    document.getElementById('changeDisplay').innerText = change;
+                    
+                    const changeEl = document.getElementById('changeDisplay');
+                    changeEl.innerText = change;
+                    changeEl.className = change.includes('-') ? "text-sm font-mono text-rose-400" : "text-sm font-mono text-emerald-400";
                 } else {
                     document.getElementById('priceDisplay').innerText = "Limit Reached";
                 }
@@ -76,23 +86,27 @@
             
             if (!userQuery) return;
 
-            // స్క్రీన్ మీద ఉన్న స్టాక్ డేటా ని లాగడం
-            const symbolText = document.getElementById('displaySymbol').innerText; 
+            const symbolText = document.getElementById('displaySymbol').innerText.split(' ')[0]; 
             const priceText = document.getElementById('priceDisplay').innerText; 
             const changeText = document.getElementById('changeDisplay').innerText; 
 
-            // జెమినీ కి ఫుల్ కాంటెక్స్ట్ తో ప్రాంప్ట్ తయారు చేయడం
+            // ద బ్రూటల్ సైకలాజికల్ ప్రాంప్ట్ (The Brutal Psychological Prompt)
             let fullPrompt = "";
             if (priceText !== "$0.00" && priceText !== "Limit Reached") {
-                fullPrompt = `I am currently looking at the stock: ${symbolText}. Its current price is ${priceText} and today's change is ${changeText}. Based on this specific financial data, please answer my query: "${userQuery}". Keep the answer short, highly logical, and focused on this stock.`;
+                fullPrompt = `You are a ruthless, highly accurate, no-nonsense Wall Street AI analyst. Do not use pleasantries. I am analyzing the stock: ${symbolText}. Current price: ${priceText}, Today's change: ${changeText}. The user's query is: "${userQuery}". 
+                Analyze this using advanced market psychology and technical realities. Your response MUST be strictly formatted in these 4 lines exactly (do not add any intro or outro text):
+                🎯 SENTIMENT: [State clearly if it is Bullish, Bearish, or Neutral]
+                🧠 THE BRUTAL TRUTH: [1-2 sentences explaining the cold, logical reality behind this stock's current situation, cutting through the market noise]
+                ⚡ ACTIONABLE ADVICE: [Clear, direct, merciless advice on what a rational trader should do right now regarding the user's query]
+                ⚠️ RISK WARNING: [A brutal reality check about the downside risk to keep their greed in check]`;
             } else {
-                fullPrompt = userQuery; 
+                fullPrompt = `You are a ruthless, no-nonsense financial AI. The user asked: "${userQuery}". Give a brutal, logical, and highly actionable response. Cut the fluff.`;
             }
 
-            resDiv.innerText = "Thinking deeply mawa...";
+            resDiv.style.display = "block";
+            resDiv.innerText = "Analyzing market psychology and raw data...";
             
             try {
-                // మన నెట్లిఫై బ్యాక్-ఎండ్ కి రిక్వెస్ట్ పంపడం
                 const response = await fetch('/.netlify/functions/gemini', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -104,12 +118,13 @@
                 if(data.error) {
                      resDiv.innerText = "Error: " + data.error;
                 } else if(data.candidates && data.candidates[0]) {
+                     // గూగుల్ నుండి వచ్చిన టెక్స్ట్ ని అలాగే ప్రింట్ చేస్తున్నాం
                      resDiv.innerText = data.candidates[0].content.parts[0].text;
                 } else {
-                     resDiv.innerText = "Gemini Error!";
+                     resDiv.innerText = "Data missing. API failed.";
                 }
             } catch (e) { 
-                resDiv.innerText = "Network Error! Check Console."; 
+                resDiv.innerText = "System Failure! Check Network."; 
             }
         }
     </script>
