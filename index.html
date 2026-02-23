@@ -36,7 +36,7 @@
                 <i data-lucide="bot"></i> Gemini AI Analysis
             </h3>
             <div class="flex gap-2">
-                <input type="text" id="aiQuery" placeholder="Ask AI about stocks..." 
+                <input type="text" id="aiQuery" placeholder="Ask AI about this stock (e.g., Analyse)" 
                     class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 w-full text-white focus:outline-none focus:border-cyan-500">
                 <button onclick="askGemini()" class="bg-cyan-500 text-black px-4 py-2 rounded-xl font-bold">Ask</button>
             </div>
@@ -47,7 +47,7 @@
     <script>
         lucide.createIcons();
         
-        // నీ Alpha Vantage కీ ఇక్కడ పెట్టుకో (ఇది ఫ్రంట్ ఎండ్ కాబట్టి సేఫ్ కాదు, కానీ ప్రస్తుతానికి వర్క్ అవ్వడానికి ఉంచు)
+        // నీ Alpha Vantage కీ ఇక్కడ పెట్టుకో
         const ALPHA_KEY = "నీ_ఆల్ఫా_వాంటేజ్_కీ_ఇక్కడ_పెట్టు"; 
 
         async function fetchStock() {
@@ -71,18 +71,36 @@
         }
 
         async function askGemini() {
-            const query = document.getElementById('aiQuery').value;
+            const userQuery = document.getElementById('aiQuery').value;
             const resDiv = document.getElementById('aiResponse');
-            if (!query) return;
-            resDiv.innerText = "Thinking...";
+            
+            if (!userQuery) return;
+
+            // స్క్రీన్ మీద ఉన్న స్టాక్ డేటా ని లాగడం
+            const symbolText = document.getElementById('displaySymbol').innerText; 
+            const priceText = document.getElementById('priceDisplay').innerText; 
+            const changeText = document.getElementById('changeDisplay').innerText; 
+
+            // జెమినీ కి ఫుల్ కాంటెక్స్ట్ తో ప్రాంప్ట్ తయారు చేయడం
+            let fullPrompt = "";
+            if (priceText !== "$0.00" && priceText !== "Limit Reached") {
+                fullPrompt = `I am currently looking at the stock: ${symbolText}. Its current price is ${priceText} and today's change is ${changeText}. Based on this specific financial data, please answer my query: "${userQuery}". Keep the answer short, highly logical, and focused on this stock.`;
+            } else {
+                fullPrompt = userQuery; 
+            }
+
+            resDiv.innerText = "Thinking deeply mawa...";
+            
             try {
-                // ఇక్కడ మనం నేరుగా గూగుల్ ని కాకుండా మన నెట్లిఫై సర్వర్ ని అడుగుతున్నాం
+                // మన నెట్లిఫై బ్యాక్-ఎండ్ కి రిక్వెస్ట్ పంపడం
                 const response = await fetch('/.netlify/functions/gemini', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: query })
+                    body: JSON.stringify({ query: fullPrompt }) 
                 });
+                
                 const data = await response.json();
+                
                 if(data.error) {
                      resDiv.innerText = "Error: " + data.error;
                 } else if(data.candidates && data.candidates[0]) {
@@ -91,10 +109,9 @@
                      resDiv.innerText = "Gemini Error!";
                 }
             } catch (e) { 
-                resDiv.innerText = "Network Error!"; 
+                resDiv.innerText = "Network Error! Check Console."; 
             }
         }
     </script>
 </body>
 </html>
-
